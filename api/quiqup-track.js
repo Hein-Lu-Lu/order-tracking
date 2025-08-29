@@ -101,7 +101,7 @@ function shapeResponse(order, fallbackRef) {
 
   return {
     reference: order.id || order.reference || fallbackRef,
-    status,
+    status,state,
     fulfillments: fulfilments.map((f) => ({
       carrier: f.trackingCompany || f.carrier || null,
       tracking_numbers: (f.trackingInfo || []).map(t => t.number).filter(Boolean),
@@ -115,5 +115,6 @@ function shapeResponse(order, fallbackRef) {
     })),
   };
 }
+
 
 
