@@ -75,7 +75,7 @@ async function getQuiqupToken() {
 
 async function fetchQuiqupOrder(ref, token) {
   const readBase = process.env.QUIQUP_READ_BASE || process.env.QUIQUP_BASE;
-  const url = `${readBase}/order/${encodeURIComponent(ref)}`;
+  const url = `${readBase}/orders/${encodeURIComponent(ref)}`;
   const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
   const body = await r.text();
   if (!r.ok) {
