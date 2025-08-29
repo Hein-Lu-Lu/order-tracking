@@ -88,6 +88,7 @@ async function fetchQuiqupOrder(ref, token) {
 // Normalize fields for your storefront
 function shapeResponse(order, fallbackRef) {
   const status =
+    order.state ||   
     order.status ||
     order.displayStatus ||
     order.displayFulfilmentStatus ||
@@ -114,4 +115,5 @@ function shapeResponse(order, fallbackRef) {
     })),
   };
 }
+
 
