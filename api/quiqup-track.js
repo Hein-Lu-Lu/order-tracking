@@ -84,16 +84,35 @@ async function fetchQuiqupOrder(ref, token) {
   }
   return JSON.parse(body); // this returns { order: {...} }
 }
+function normalizeEta(ord) {
+  const candidates = [
+    ord.delivery_before,
+    ord.delivery_time?.delivery_before,
+    ord.delivery_time?.before,
+    ord.delivery_time?.to,
+    ord.delivery_time,
+    ord.delivery?.before,
+    ord.delivery?.eta,
+    ord.eta
+  ].filter(Boolean);
 
+  let raw = candidates[0];
+  if (!raw) return null;
+
+  if (typeof raw === 'number') { if (raw < 1e12) raw *= 1000; return new Date(raw).toISOString(); }
+  if (typeof raw === 'string') {
+    let s = raw.trim();
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(s)) s = s.replace(' ', 'T');
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s) && !/[Z+\-]\d{2}:?\d{2}$/.test(s)) s += 'Z';
+    const dt = new Date(s);
+    return isNaN(dt) ? null : dt.toISOString();
+  }
+  return null;
+}
 // Map the /orders JSON shape → what your page expects
 function shapeResponse(obj, fallbackRef) {
   const ord = obj?.order || obj || {};
-  const status =
-    ord.state ||               // <-- this is where your status lives
-    ord.status ||
-    ord.displayStatus ||
-    ord.displayFulfilmentStatus ||
-    'Unknown';
+  const status = ord.state || ord.status || 'Unknown';
 
   return {
     reference: String(ord.id ?? fallbackRef),
@@ -102,11 +121,12 @@ function shapeResponse(obj, fallbackRef) {
       carrier: 'Quiqup',
       tracking_numbers: [ord.tracking_token].filter(Boolean),
       tracking_urls: [ord.tracking_url, ord.tracking_url_advance].filter(Boolean),
-      eta: ord.delivery_before || ord.delivery_time || null,
+       eta: normalizeEta(ord),  
       events: [] // add later if you get a timeline endpoint
     }]
   };
 }
+
 
 
 
