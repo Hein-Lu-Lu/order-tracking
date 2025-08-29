@@ -74,12 +74,15 @@ async function getQuiqupToken() {
 }
 
 async function fetchQuiqupOrder(ref, token) {
-  const r = await fetch(
-    `${process.env.QUIQUP_BASE}/api/fulfilment/orders/${encodeURIComponent(ref)}`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-  if (!r.ok) return null;
-  return await r.json();
+  const readBase = process.env.QUIQUP_READ_BASE || process.env.QUIQUP_BASE;
+  const url = `${readBase}/order/${encodeURIComponent(ref)}`;
+  const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const body = await r.text();
+  if (!r.ok) {
+    console.error('Quiqup READ failed', r.status, body, 'URL:', url);
+    return null;
+  }
+  return JSON.parse(body); // QuiqDash returns JSON
 }
 
 // Normalize fields for your storefront
@@ -111,3 +114,4 @@ function shapeResponse(order, fallbackRef) {
     })),
   };
 }
+
