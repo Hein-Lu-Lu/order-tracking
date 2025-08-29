@@ -82,37 +82,29 @@ async function fetchQuiqupOrder(ref, token) {
     console.error('Quiqup READ failed', r.status, body, 'URL:', url);
     return null;
   }
-  return JSON.parse(body); // QuiqDash returns JSON
+  return JSON.parse(body); // this returns { order: {...} }
 }
 
-// Normalize fields for your storefront
-function shapeResponse(order, fallbackRef) {
+// Map the /orders JSON shape → what your page expects
+function shapeResponse(obj, fallbackRef) {
+  const ord = obj?.order || obj || {};
   const status =
-    order.state ||   
-    order.status ||
-    order.displayStatus ||
-    order.displayFulfilmentStatus ||
-    "Unknown";
-
-  const fulfilments =
-    order.fulfilments ||
-    order.fulfillments ||
-    [];
+    ord.state ||               // <-- this is where your status lives
+    ord.status ||
+    ord.displayStatus ||
+    ord.displayFulfilmentStatus ||
+    'Unknown';
 
   return {
-    reference: order.id || order.reference || fallbackRef,
-    status,state,
-    fulfillments: fulfilments.map((f) => ({
-      carrier: f.trackingCompany || f.carrier || null,
-      tracking_numbers: (f.trackingInfo || []).map(t => t.number).filter(Boolean),
-      tracking_urls: (f.trackingInfo || []).map(t => t.url).filter(Boolean),
-      eta: f.estimatedDeliveryAt || f.eta || null,
-      events: (f.events || []).map(e => ({
-        time: e.happenedAt || e.time || e.timestamp,
-        description: e.status || e.description,
-        location: [e.city, e.province, e.country].filter(Boolean).join(", "),
-      })),
-    })),
+    reference: String(ord.id ?? fallbackRef),
+    status,
+    fulfillments: [{
+      carrier: 'Quiqup',
+      tracking_numbers: [ord.tracking_token].filter(Boolean),
+      tracking_urls: [ord.tracking_url, ord.tracking_url_advance].filter(Boolean),
+      eta: ord.delivery_before || ord.delivery_time || null,
+      events: [] // add later if you get a timeline endpoint
+    }]
   };
 }
 
